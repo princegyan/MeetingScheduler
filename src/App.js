@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, Users, X, Edit, Trash, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const CalendarView = ({ meetings }) => {
@@ -18,8 +18,11 @@ const CalendarView = ({ meetings }) => {
 
   const hasMeeting = (day) => {
     const dateToCheck = formatDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), day));
-    return meetings.some(meeting => meeting.date === dateToCheck);
+    return meetings.some((meeting) => {
+      return formatDate(new Date(meeting.date)) === dateToCheck;
+    });
   };
+  
 
   const navigateMonth = (direction) => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + direction, 1));
@@ -280,90 +283,130 @@ const MeetingForm = ({ onClose, onSubmit, initialData = null }) => {
 };
 
 const MeetingScheduler = () => {
-  const initialMeetings = [
-    {
-      id: 1,
-      title: "Weekly Team Sync",
-      date: "2025-01-04",
-      time: "10:00",
-      duration: 30,
-      participants: "team@company.com",
-      description: "Regular team sync meeting"
-    },
-    {
-      id: 2,
-      title: "Project Review",
-      date: "2025-01-06",
-      time: "14:00",
-      duration: 60,
-      participants: "manager@company.com, team@company.com",
-      description: "Monthly project status review"
-    },
-    {
-      id: 3,
-      title: "Client Meeting",
-      date: "2025-01-08",
-      time: "11:00",
-      duration: 45,
-      participants: "client@client.com, sales@company.com",
-      description: "New feature discussion"
-    },
-    {
-      id: 4,
-      title: "Sprint Planning",
-      date: "2025-01-15",
-      time: "09:00",
-      duration: 60,
-      participants: "developers@company.com",
-      description: "Planning for next sprint"
-    },
-    {
-      id: 5,
-      title: "Design Review",
-      date: "2025-01-22",
-      time: "13:00",
-      duration: 30,
-      participants: "design@company.com, product@company.com",
-      description: "Review new design proposals"
-    }
-  ];
-
-  const [meetings, setMeetings] = useState(initialMeetings);
+  const [meetings, setMeetings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [editingMeeting, setEditingMeeting] = useState(null);
 
-  const handleDelete = async (id) => {
-    setMeetings(meetings.filter(meeting => meeting.id !== id));
-  };
+  // Fetch meetings on component mount
+  useEffect(() => {
+    fetchMeetings();
+  }, []);
 
-  const handleEdit = (meeting) => {
-    setEditingMeeting(meeting);
-    setShowForm(true);
+  const fetchMeetings = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('http://localhost:5000/api/meetings');
+      if (!response.ok) {
+        throw new Error('Failed to fetch meetings');
+      }
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const data = await response.json();
+        console.log('API Response:', data); // Log to inspect
+        if (Array.isArray(data)) {
+          setMeetings(data);
+        } else if (data && data.meetings) {
+          setMeetings(data.meetings); // Extract meetings array
+        } else {
+          throw new Error('Unexpected API response format');
+        }
+      } else {
+        throw new Error('Unexpected response format');
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  
+  
+
+  const handleDelete = async (id) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/meetings/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete meeting');
+      }
+      
+      setMeetings(meetings.filter(meeting => meeting.id !== id));
+    } catch (err) {
+      console.error('Error deleting meeting:', err);
+      // You might want to show an error message to the user
+    }
   };
 
   const handleSubmit = async (meetingData) => {
     try {
       if (editingMeeting) {
-        const updatedMeeting = {
-          ...meetingData,
-          id: editingMeeting.id
-        };
+        // Update existing meeting
+        const response = await fetch(`http://localhost:5000/api/meetings/${editingMeeting.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(meetingData),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to update meeting');
+        }
+
+        const updatedMeeting = await response.json();
         setMeetings(meetings.map(meeting => 
           meeting.id === editingMeeting.id ? updatedMeeting : meeting
         ));
       } else {
-        const newMeeting = {
-          ...meetingData,
-          id: meetings.length + 1
-        };
+        // Create new meeting
+        const response = await fetch('http://localhost:5000/api/meetings', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(meetingData),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to create meeting');
+        }
+
+        const newMeeting = await response.json();
         setMeetings([...meetings, newMeeting]);
       }
+      
       setShowForm(false);
       setEditingMeeting(null);
-    } catch (error) {
-      console.error('Error saving meeting:', error);
+    } catch (err) {
+      console.error('Error saving meeting:', err);
+      // You might want to show an error message to the user
     }
   };
+
+  if (loading) {
+    return (
+      <div className="w-full max-w-6xl mx-auto p-4">
+        <div className="flex justify-center items-center h-64">
+          <span className="text-gray-500">Loading meetings...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="w-full max-w-6xl mx-auto p-4">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-red-500">Error: {error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-6xl mx-auto p-4">
@@ -385,7 +428,10 @@ const MeetingScheduler = () => {
         <UpcomingMeetings 
           meetings={meetings} 
           onDelete={handleDelete}
-          onEdit={handleEdit}
+          onEdit={(meeting) => {
+            setEditingMeeting(meeting);
+            setShowForm(true);
+          }}
         />
       </div>
 
