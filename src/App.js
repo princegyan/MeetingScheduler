@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState,useEffect } from 'react';
 import { Calendar, Clock, Users, X, Edit, Trash, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const CalendarView = ({ meetings }) => {
@@ -18,11 +18,9 @@ const CalendarView = ({ meetings }) => {
 
   const hasMeeting = (day) => {
     const dateToCheck = formatDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), day));
-    return meetings.some((meeting) => {
-      return formatDate(new Date(meeting.date)) === dateToCheck;
-    });
+    return meetings.some(meeting => meeting.date === dateToCheck);
   };
-  
+    
 
   const navigateMonth = (direction) => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + direction, 1));
@@ -290,123 +288,120 @@ const MeetingScheduler = () => {
   const [editingMeeting, setEditingMeeting] = useState(null);
 
   // Fetch meetings on component mount
-  useEffect(() => {
-    fetchMeetings();
-  }, []);
-
-  const fetchMeetings = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('http://localhost:5000/api/meetings');
-      if (!response.ok) {
-        throw new Error('Failed to fetch meetings');
-      }
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        const data = await response.json();
-        console.log('API Response:', data); // Log to inspect
-        if (Array.isArray(data)) {
-          setMeetings(data);
-        } else if (data && data.meetings) {
-          setMeetings(data.meetings); // Extract meetings array
+    useEffect(() => {
+      fetchMeetings();
+    }, []);
+  
+    const fetchMeetings = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('http://localhost:5000/api/meetings');
+        if (!response.ok) {
+          throw new Error('Failed to fetch meetings');
+        }
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const data = await response.json();
+          console.log('API Response:', data); // Log to inspect
+          if (Array.isArray(data)) {
+            setMeetings(data);
+          } else if (data && data.meetings) {
+            setMeetings(data.meetings); // Extract meetings array
+          } else {
+            throw new Error('Unexpected API response format');
+          }
         } else {
-          throw new Error('Unexpected API response format');
+          throw new Error('Unexpected response format');
         }
-      } else {
-        throw new Error('Unexpected response format');
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
   
-  
-  
-
-  const handleDelete = async (id) => {
-    try {
-      const response = await fetch(`http://localhost:5000/api/meetings/${id}`, {
-        method: 'DELETE',
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to delete meeting');
-      }
-      
-      setMeetings(meetings.filter(meeting => meeting.id !== id));
-    } catch (err) {
-      console.error('Error deleting meeting:', err);
-      // You might want to show an error message to the user
-    }
-  };
-
-  const handleSubmit = async (meetingData) => {
-    try {
-      if (editingMeeting) {
-        // Update existing meeting
-        const response = await fetch(`http://localhost:5000/api/meetings/${editingMeeting.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(meetingData),
+    const handleDelete = async (id) => {
+      try {
+        const response = await fetch(`http://localhost:5000/api/meetings/${id}`, {
+          method: 'DELETE',
         });
-
+        
         if (!response.ok) {
-          throw new Error('Failed to update meeting');
+          throw new Error('Failed to delete meeting');
         }
-
-        const updatedMeeting = await response.json();
-        setMeetings(meetings.map(meeting => 
-          meeting.id === editingMeeting.id ? updatedMeeting : meeting
-        ));
-      } else {
-        // Create new meeting
-        const response = await fetch('http://localhost:5000/api/meetings', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(meetingData),
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to create meeting');
-        }
-
-        const newMeeting = await response.json();
-        setMeetings([...meetings, newMeeting]);
+        
+        setMeetings(meetings.filter(meeting => meeting.id !== id));
+      } catch (err) {
+        console.error('Error deleting meeting:', err);
+        // You might want to show an error message to the user
       }
-      
-      setShowForm(false);
-      setEditingMeeting(null);
-    } catch (err) {
-      console.error('Error saving meeting:', err);
-      // You might want to show an error message to the user
+    };
+  
+    const handleSubmit = async (meetingData) => {
+      try {
+        if (editingMeeting) {
+          // Update existing meeting
+          const response = await fetch(`http://localhost:5000/api/meetings/${editingMeeting.id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(meetingData),
+          });
+  
+          if (!response.ok) {
+            throw new Error('Failed to update meeting');
+          }
+  
+          const updatedMeeting = await response.json();
+          setMeetings(meetings.map(meeting => 
+            meeting.id === editingMeeting.id ? updatedMeeting : meeting
+          ));
+        } else {
+          // Create new meeting
+          const response = await fetch('http://localhost:5000/api/meetings', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(meetingData),
+          });
+  
+          if (!response.ok) {
+            throw new Error('Failed to create meeting');
+          }
+  
+          const newMeeting = await response.json();
+          setMeetings([...meetings, newMeeting]);
+        }
+        
+        setShowForm(false);
+        setEditingMeeting(null);
+      } catch (err) {
+        console.error('Error saving meeting:', err);
+        // You might want to show an error message to the user
+      }
+    };
+  
+    if (loading) {
+      return (
+        <div className="w-full max-w-6xl mx-auto p-4">
+          <div className="flex justify-center items-center h-64">
+            <span className="text-gray-500">Loading meetings...</span>
+          </div>
+        </div>
+      );
     }
-  };
-
-  if (loading) {
-    return (
-      <div className="w-full max-w-6xl mx-auto p-4">
-        <div className="flex justify-center items-center h-64">
-          <span className="text-gray-500">Loading meetings...</span>
+  
+    if (error) {
+      return (
+        <div className="w-full max-w-6xl mx-auto p-4">
+          <div className="flex justify-center items-center h-64">
+            <div className="text-red-500">Error: {error}</div>
+          </div>
         </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="w-full max-w-6xl mx-auto p-4">
-        <div className="flex justify-center items-center h-64">
-          <div className="text-red-500">Error: {error}</div>
-        </div>
-      </div>
-    );
-  }
+      );
+    }
 
   return (
     <div className="w-full max-w-6xl mx-auto p-4">
