@@ -16,12 +16,14 @@ const CalendarView = ({ meetings }) => {
     return date.toISOString().split('T')[0];
   };
 
+    
   const hasMeeting = (day) => {
     const dateToCheck = formatDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), day));
-    return meetings.some(meeting => meeting.date === dateToCheck);
+    return meetings.some((meeting) => {
+      return formatDate(new Date(meeting.date)) === dateToCheck;
+    });
   };
-    
-
+  
   const navigateMonth = (direction) => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + direction, 1));
   };
