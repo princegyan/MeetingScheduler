@@ -1,44 +1,23 @@
-const mysql = require('mysql2');  // Import the mysql2 package
+const { MongoClient } = require('mongodb');  // Import the MongoDB package
 
-// Create a connection to the MySQL database
-const db = mysql.createConnection({
-    host: 'localhost',  // Database host (can be a remote server or localhost)
-    user: 'root',       // Your MySQL username
-    password: '',       // Your MySQL password
-    database: 'meeting_scheduler',  // Database name
-    port: 3307,         // MySQL port (default is 3306, but you have set it to 3307)
-});
+// MongoDB connection URI (replace with your actual credentials)
+const password = encodeURIComponent('LtWSQQIoLb3XEV7y');  // Use encodeURIComponent if there are special characters in password
+const uri = `mongodb+srv://heneseth:${password}@mymongodb.opm2n.mongodb.net/meeting_scheduler?retryWrites=true&w=majority`;
 
-// Function to connect to the database using a promise
-const connectDB = () => {
-    return new Promise((resolve, reject) => {
-        db.connect((err) => {
-            if (err) {
-                reject('Error connecting to the database: ' + err);
-            } else {
-                console.log('Connected to the database');
-                resolve();
-            }
-        });
-    });
+const client = new MongoClient(uri);
+
+const connectDB = async () => {
+  try {
+    // Connect to MongoDB
+    await client.connect();
+    console.log('Connected to MongoDB Atlas');
+    
+    // Return the database instance
+    return client.db('meeting_scheduler');  // Replace with your desired database
+  } catch (err) {
+    console.error('Error connecting to MongoDB:', err);
+    throw err;  // Rethrow the error to handle it in the calling code
+  }
 };
 
-// Promisify the query function for easy async/await usage
-const query = (sql, params) => {
-    return new Promise((resolve, reject) => {
-        db.query(sql, params, (err, results) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(results);
-            }
-        });
-    });
-};
-
-// Export the connection, connectDB function, and the query method
-module.exports = {
-    db,
-    connectDB,
-    query
-};
+module.exports = connectDB;  // Export the connectDB function

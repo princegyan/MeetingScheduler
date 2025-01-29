@@ -1,4 +1,6 @@
 const { query } = require('../config/db');  // Import the query function
+const { ObjectID } = require('mongodb');  // Import ObjectID from mongodb
+
 
 // Create a new meeting
 exports.createMeeting = async (req, res) => {
@@ -7,13 +9,17 @@ exports.createMeeting = async (req, res) => {
         return res.status(400).json({ error: 'All fields are required' });
     }
     try {
-        const result = await query(
-            `INSERT INTO meetings (title, date, time, duration, participants, description) 
-            VALUES (?, ?, ?, ?, ?, ?)`,
-            [title, date, time, duration, participants, description]
-        );
-        console.log(`Notification: Meeting ${result.insertId} created`);
-        res.status(201).json({ success: true, meetingId: result.insertId });
+        const db = req.db;  // Get the database instance from the request object
+        const result = await db.collection('meetings').insertOne({
+            title,
+            date,
+            time,
+            duration,
+            participants,
+            description
+        });
+        console.log(`Notification: Meeting ${result.insertedId} created`);
+        res.status(201).json({ success: true, meetingId: result.insertedId });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -22,57 +28,61 @@ exports.createMeeting = async (req, res) => {
 // Get all meetings
 exports.getAllMeetings = async (req, res) => {
     try {
-        const meetings = await query('SELECT * FROM meetings');
-        res.status(200).json({ success: true, meetings });
+        const db = req.db;  // Get the database instance from the request object
+        const meetings = await db.collection('meetings').find().toArray();
+        res.status(200).json(meetings);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
 
-// Get a specific meeting by ID
+// Get a single meeting by ID
 exports.getMeetingById = async (req, res) => {
-    const meetingId = req.params.meetingId;
+    const { id } = req.params;
     try {
-        const meetings = await query('SELECT * FROM meetings WHERE id = ?', [meetingId]);
-        if (meetings.length === 0) {
+        const db = req.db;  // Get the database instance from the request object
+        const meeting = await db.collection('meetings').findOne({ _id: new require('mongodb').ObjectID(id) });
+        if (!meeting) {
             return res.status(404).json({ error: 'Meeting not found' });
         }
-        res.status(200).json({ success: true, meeting: meetings[0] });
+        res.status(200).json(meeting);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
 
-// Update an existing meeting
+// Update a meeting by ID
 exports.updateMeeting = async (req, res) => {
-    const meetingId = req.params.meetingId;
-    const { date, time, duration, participants, description } = req.body;
-    if (!date || !time || !duration || !participants || !description) {
+    const { id } = req.params;
+    const { title, date, time, duration, participants, description } = req.body;
+    if (!title || !date || !time || !duration || !participants) {
         return res.status(400).json({ error: 'All fields are required' });
     }
     try {
-        const result = await query(
-            `UPDATE meetings SET date = ?, time = ?, duration = ?, participants = ?, description = ? WHERE id = ?`,
-            [date, time, duration, participants, description, meetingId]
+        const db = req.db;  // Get the database instance from the request object
+        const result = await db.collection('meetings').updateOne(
+            { _id: new ObjectID(id) },
+            { $set: { title, date, time, duration, participants, description } }
         );
-        if (result.affectedRows === 0) {
+        if (result.matchedCount === 0) {
             return res.status(404).json({ error: 'Meeting not found' });
         }
-        res.json({ success: true, message: 'Meeting updated' });
+        res.status(200).json({ success: true });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
 
-// Delete a meeting
+// Delete a meeting by ID
 exports.deleteMeeting = async (req, res) => {
-    const meetingId = req.params.meetingId;
+    const { id } = req.params;
     try {
-        const result = await query('DELETE FROM meetings WHERE id = ?', [meetingId]);
-        if (result.affectedRows === 0) {
+        const db = req.db;  // Get the database instance from the request object
+        const result = await db.collection('meetings').deleteOne({ _id: new require('mongodb').ObjectID(id) });
+        if (result.deletedCount === 0) {
             return res.status(404).json({ error: 'Meeting not found' });
         }
-        res.json({ success: true, message: 'Meeting deleted' });
+        res.status(200).json({ success: true });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

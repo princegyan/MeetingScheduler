@@ -12,17 +12,17 @@ const CalendarView = ({ meetings }) => {
     return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
   };
 
-  const formatDate = (date) => {
-    return date.toISOString().split('T')[0];
-  };
+  // const formatDate = (date) => {
+  //   return date.toISOString().split('T')[0];
+  // };
 
     
-  const hasMeeting = (day) => {
-    const dateToCheck = formatDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), day));
-    return meetings.some((meeting) => {
-      return formatDate(new Date(meeting.date)) === dateToCheck;
-    });
-  };
+  // const hasMeeting = (day) => {
+  //   const dateToCheck = formatDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), day));
+  //   return meetings.some((meeting) => {
+  //     return formatDate(new Date(meeting.date)) === dateToCheck;
+  //   });
+  // };
   
   const navigateMonth = (direction) => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + direction, 1));
@@ -32,37 +32,42 @@ const CalendarView = ({ meetings }) => {
     const daysInMonth = getDaysInMonth(currentDate);
     const firstDayOfMonth = getFirstDayOfMonth(currentDate);
     const days = [];
-
+  
     // Add empty cells for days before the first day of the month
     for (let i = 0; i < firstDayOfMonth; i++) {
       days.push(<div key={`empty-${i}`} className="h-12" />);
     }
-
+  
     // Add cells for each day of the month
     for (let day = 1; day <= daysInMonth; day++) {
-      const isToday = new Date().toDateString() === new Date(currentDate.getFullYear(), currentDate.getMonth(), day).toDateString();
-      const hasMeetingOnDay = hasMeeting(day);
-
+      const dateToCheck = new Date(currentDate.getFullYear(), currentDate.getMonth(), day).toDateString();
+      const isToday = new Date().toDateString() === dateToCheck;
+      const meetingsOnDay = meetings.filter(meeting => new Date(meeting.date).toDateString() === dateToCheck);
+    
       days.push(
         <div 
           key={day}
-          className={`h-12 p-1 border relative ${
-            isToday ? 'bg-blue-50' : ''
-          }`}
+          className={`h-20 p-1 border relative overflow-auto ${isToday ? 'bg-blue-50' : ''}`}
         >
-          <span className={`text-sm ${isToday ? 'font-bold' : ''}`}>
-            {day}
-          </span>
-          {hasMeetingOnDay && (
-            <div className="absolute bottom-1 right-1 w-2 h-2 rounded-full bg-blue-500" />
+          <span className={`text-sm ${isToday ? 'font-bold' : ''}`}>{day}</span>
+          {meetingsOnDay.length > 0 && (
+            <div className="mt-1 space-y-1">
+              {meetingsOnDay.map((meeting, index) => (
+                <div key={index} className="text-xs bg-green-100 p-1 rounded">
+                  <strong>{meeting.title}</strong>
+                  <br />
+                  {meeting.time}
+                </div>
+              ))}
+            </div>
           )}
         </div>
       );
     }
-
+    
+  
     return days;
   };
-
   return (
     <div className="border rounded-lg p-4">
       <div className="flex justify-between items-center mb-4">
