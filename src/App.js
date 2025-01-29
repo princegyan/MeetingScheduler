@@ -39,31 +39,37 @@ const CalendarView = ({ meetings }) => {
     }
   
     // Add cells for each day of the month
-    for (let day = 1; day <= daysInMonth; day++) {
-      const dateToCheck = new Date(currentDate.getFullYear(), currentDate.getMonth(), day).toDateString();
-      const isToday = new Date().toDateString() === dateToCheck;
-      const meetingsOnDay = meetings.filter(meeting => new Date(meeting.date).toDateString() === dateToCheck);
-    
-      days.push(
-        <div 
-          key={day}
-          className={`h-20 p-1 border relative overflow-auto ${isToday ? 'bg-blue-50' : ''}`}
-        >
-          <span className={`text-sm ${isToday ? 'font-bold' : ''}`}>{day}</span>
-          {meetingsOnDay.length > 0 && (
-            <div className="mt-1 space-y-1">
-              {meetingsOnDay.map((meeting, index) => (
-                <div key={index} className="text-xs bg-green-100 p-1 rounded">
-                  <strong>{meeting.title}</strong>
-                  <br />
-                  {meeting.time}
-                </div>
-              ))}
-            </div>
-          )}
+    const colors = ['bg-red-100', 'bg-green-100', 'bg-blue-100', 'bg-yellow-100', 'bg-purple-100', 'bg-pink-100','bg-black-100', 'bg-gray-100', 'bg-indigo-100', 'bg-red-200', 'bg-green-200', 'bg-blue-200', 'bg-yellow-200', 'bg-purple-200', 'bg-pink-200','bg-black-200', 'bg-gray-200', 'bg-indigo-200'];
+
+for (let day = 1; day <= daysInMonth; day++) {
+  const dateToCheck = new Date(currentDate.getFullYear(), currentDate.getMonth(), day).toDateString();
+  const isToday = new Date().toDateString() === dateToCheck;
+  const meetingsOnDay = meetings.filter(meeting => new Date(meeting.date).toDateString() === dateToCheck);
+
+  days.push(
+    <div 
+      key={day}
+      className={`h-20 p-1 border relative overflow-auto ${isToday ? 'bg-blue-50' : ''}`}
+    >
+      <span className={`text-sm ${isToday ? 'font-bold' : ''}`}>{day}</span>
+      {meetingsOnDay.length > 0 && (
+        <div className="mt-1 space-y-1">
+          {meetingsOnDay.map((meeting, index) => {
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            return (
+              <div key={index} className={`text-xs p-1 rounded ${randomColor}`}>
+                <strong>{meeting.title}</strong>
+                <br />
+                {meeting.time}
+              </div>
+            );
+          })}
         </div>
-      );
-    }
+      )}
+    </div>
+  );
+}
+
     
   
     return days;
@@ -99,7 +105,7 @@ const CalendarView = ({ meetings }) => {
         {renderCalendarDays()}
       </div>
       <div className="mt-4 flex items-center justify-end gap-2 text-sm text-gray-600">
-        <div className="w-2 h-2 rounded-full bg-blue-500" />
+        {/* <div className="w-2 h-2 rounded-full bg-blue-500" /> */}
         <span>Meeting scheduled</span>
       </div>
     </div>
