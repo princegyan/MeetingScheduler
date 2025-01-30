@@ -308,7 +308,7 @@ const MeetingScheduler = () => {
     const fetchMeetings = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:5000/api/meetings');
+        const response = await fetch('https://backend-meeting-scheduler.vercel.app/api/meetings');
         if (!response.ok) {
           throw new Error('Failed to fetch meetings');
         }
@@ -335,7 +335,7 @@ const MeetingScheduler = () => {
   
     const handleDelete = async (id) => {
       try {
-        const response = await fetch(`http://localhost:5000/api/meetings/${id}`, {
+        const response = await fetch(`https://backend-meeting-scheduler.vercel.app/api/meetings/${id}`, {
           method: 'DELETE',
         });
         
@@ -354,7 +354,7 @@ const MeetingScheduler = () => {
       try {
         if (editingMeeting) {
           // Update existing meeting
-          const response = await fetch(`http://localhost:5000/api/meetings/${editingMeeting.id}`, {
+          const response = await fetch(`https://backend-meeting-scheduler.vercel.app/api/meetings/${editingMeeting.id}`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
@@ -372,7 +372,7 @@ const MeetingScheduler = () => {
           ));
         } else {
           // Create new meeting
-          const response = await fetch('http://localhost:5000/api/meetings', {
+          const response = await fetch('https://backend-meeting-scheduler.vercel.app/api/meetings', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
